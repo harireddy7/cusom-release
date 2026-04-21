@@ -1,0 +1,54 @@
+name: Pull Request
+
+on:
+  pull_request:
+    branches:
+      - dev
+      - release/*
+
+jobs:
+  ensure-labels:
+    name: Ensure PR labels exist
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: read
+
+    steps:
+      - name: Log PR details
+        run: |
+          echo "PR #${{ github.event.pull_request.number }}: ${{ github.event.pull_request.title }}"
+          echo "Author  : ${{ github.event.pull_request.user.login }}"
+          echo "Base    : ${{ github.event.pull_request.base.ref }}"
+          echo "Head    : ${{ github.event.pull_request.head.ref }}"
+          echo "URL     : ${{ github.event.pull_request.html_url }}"
+
+      - name: Ensure labels exist
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          BASE_BRANCH="${{ github.event.pull_request.base.ref }}"
+
+          # Always ensure auto-merge label exists
+          gh label create "auto-merge" \
+            --color "0e8a16" \
+            --description "Automatically merge this PR" \
+            --force \
+            --repo ${{ github.repository }}
+
+          # Create branch-specific label with correct color
+          if [[ "$BASE_BRANCH" == "dev" ]]; then
+            LABEL_COLOR="f9d0c4"
+          elif [[ "$BASE_BRANCH" == release/* ]]; then
+            LABEL_COLOR="f4de5f"
+          else
+            LABEL_COLOR="ededed"
+          fi
+
+          gh label create "$BASE_BRANCH" \
+            --color "$LABEL_COLOR" \
+            --description "PRs targeting the $BASE_BRANCH branch" \
+            --force \
+            --repo ${{ github.repository }}
+
+          echo "Labels ensured for base branch: $BASE_BRANCH"

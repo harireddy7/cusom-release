@@ -13,7 +13,6 @@ jobs:
 
   get-current-version:
     name: Get version
-    needs: [ generate-version ]
     uses: ./.github/workflows/get-version.yaml
 
   bump-version:
