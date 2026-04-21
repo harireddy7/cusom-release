@@ -1,1 +1,1 @@
-console.log('App loaded - 1.1.0-dev.2');
+console.log('Commit before cutting release - 1.1.0-dev.3');
