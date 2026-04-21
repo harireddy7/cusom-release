@@ -1,0 +1,54 @@
+name: Generate Version
+
+on:
+  workflow_call:
+    outputs:
+      version:
+        description: Release version
+        value: ${{ jobs.generate.outputs.version }}
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.extract-version.outputs.version }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node v24
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Bump version from package.json
+        id: extract-version
+        run: |
+          current=$(node -p "require('./package.json').version")
+
+          # Validate version matches expected pattern: x.y.z-tag.N
+          if ! [[ "$current" =~ ^[0-9]+\.[0-9]+\.[0-9]+-[a-zA-Z][a-zA-Z0-9]*\.[0-9]+$ ]]; then
+            echo "Error: version '$current' does not match expected pattern (e.g. 1.0.0-dev.0)"
+            exit 1
+          fi
+
+          # Split on the last '.' to isolate the numeric suffix
+          prefix="${current%.*}"
+          last="${current##*.}"
+
+          if ! [[ "$last" =~ ^[0-9]+$ ]]; then
+            echo "Error: expected a numeric suffix after the last '.', got '$last'"
+            exit 1
+          fi
+
+          next=$((last + 1))
+          version="${prefix}.${next}"
+          echo "Bumped version: $current -> $version"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Version ${{ steps.extract-version.outputs.version }}
+        run: echo "Released version ${{ steps.extract-version.outputs.version }}"
+
