@@ -21,6 +21,9 @@ jobs:
     needs: [ generate-version, get-current-version ]
     uses: ./.github/workflows/bump-version.yaml
     secrets: inherit
+    permissions:
+      contents: write
+      pull-requests: write
     with:
       checkout_branch: dev
       version: ${{ needs.generate-version.outputs.version }}
