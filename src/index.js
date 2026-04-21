@@ -1,1 +1,1 @@
-console.log('Commit before cutting release - 1.1.0-dev.3');
+console.log('Next dev release - 2.0.0-dev.2');
