@@ -1,1 +1,1 @@
-console.log('Next dev release - 2.0.0-dev.2');
+console.log('Prod release - 2.0.0');
