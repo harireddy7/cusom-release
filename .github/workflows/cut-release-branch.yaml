@@ -1,0 +1,106 @@
+name: Cut Release Branch
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_branch:
+        description: "Release branch name (e.g. release/1.0.0)"
+        required: true
+      next_release:
+        description: "Next dev version (e.g. 2.0.0-dev.0)"
+        required: true
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+    outputs:
+      current_version: ${{ steps.versions.outputs.current_version }}
+      rc_version: ${{ steps.versions.outputs.rc_version }}
+
+    steps:
+      - name: Checkout dev branch
+        uses: actions/checkout@v4
+        with:
+          ref: dev
+          fetch-depth: 0
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Setup Node v24
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      # ------------------------------------------------------------
+      # GUARD: Fail if release branch already exists
+      # ------------------------------------------------------------
+      - name: Guard against existing release branch
+        run: |
+          if git show-ref --verify --quiet "refs/remotes/origin/${{ inputs.release_branch }}"; then
+            echo "ERROR: Release branch '${{ inputs.release_branch }}' already exists."
+            exit 1
+          fi
+
+      # ------------------------------------------------------------
+      # Compute versions and create release branch
+      # ------------------------------------------------------------
+      - name: Compute versions
+        id: versions
+        run: |
+          CURRENT_VERSION=$(node -p "require('./package.json').version")
+
+          if [[ "$CURRENT_VERSION" != *"-dev."* ]]; then
+            echo "ERROR: Expected a dev version, got $CURRENT_VERSION"
+            exit 1
+          fi
+
+          BASE_VERSION="${CURRENT_VERSION%-dev.*}"
+          RC_VERSION="${BASE_VERSION}-rc.1"
+
+          echo "current_version=$CURRENT_VERSION" >> "$GITHUB_OUTPUT"
+          echo "rc_version=$RC_VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Create release branch
+        run: |
+          git checkout -b "${{ inputs.release_branch }}"
+          git push origin "${{ inputs.release_branch }}"
+
+      - name: Create PR labels
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh label create "dev" \
+            --color "f9d0c4" \
+            --description "PRs targeting the dev branch" \
+            --force
+          gh label create "${{ inputs.release_branch }}" \
+            --color "f4de5f" \
+            --description "PRs targeting the ${{ inputs.release_branch }} branch" \
+            --force
+
+  bump-rc-version:
+    name: Bump RC version on release branch
+    needs: prepare
+    uses: ./.github/workflows/bump-version.yaml
+    secrets: inherit
+    with:
+      checkout_branch: ${{ inputs.release_branch }}
+      version: ${{ needs.prepare.outputs.rc_version }}
+      current_version: ${{ needs.prepare.outputs.current_version }}
+
+  bump-dev-version:
+    name: Bump dev to next version
+    needs: prepare
+    uses: ./.github/workflows/bump-version.yaml
+    secrets: inherit
+    with:
+      checkout_branch: dev
+      version: ${{ inputs.next_release }}
+      current_version: ${{ needs.prepare.outputs.current_version }}
+
