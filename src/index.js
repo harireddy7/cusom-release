@@ -1,1 +1,1 @@
-console.log('Release candidate - 1.0.0-rc.2');
+console.log('Prod release - 1.0.0-rc.3');
