@@ -1,1 +1,1 @@
-console.log('App loaded - 1.1.0-dev.1');
+console.log('App loaded - 1.1.0-dev.2');
