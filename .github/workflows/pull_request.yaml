@@ -31,7 +31,7 @@ jobs:
 
           # Always ensure auto-merge label exists
           gh label create "auto-merge" \
-            --color "0e8a16" \
+            --color "ffffff" \
             --description "Automatically merge this PR" \
             --force \
             --repo ${{ github.repository }}
