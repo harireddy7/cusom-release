@@ -1,0 +1,22 @@
+name: PR Merged on STG
+
+on:
+  pull_request:
+    branches:
+      - stg
+    types:
+      - closed
+
+jobs:
+  log-merge-info:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    steps:
+      - name: Log Merge Details
+        run: |
+          echo "✅ PR merged into stg branch"
+          echo "Merged from branch : ${{ github.event.pull_request.head.ref }}"
+          echo "Merged by          : ${{ github.event.pull_request.merged_by.login }}"
+          echo "PR Title           : ${{ github.event.pull_request.title }}"
+          echo "PR Number          : #${{ github.event.pull_request.number }}"
+          echo "Merge Commit SHA   : ${{ github.event.pull_request.merge_commit_sha }}"

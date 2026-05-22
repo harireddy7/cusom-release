@@ -55,4 +55,3 @@ jobs:
 
       - name: Version ${{ steps.extract-version.outputs.version }}
         run: echo "Released version ${{ steps.extract-version.outputs.version }}"
-

@@ -1,0 +1,45 @@
+name: Push to Dev
+
+on:
+  push:
+    branches:
+      - dev
+
+jobs:
+  log-and-raise-pr:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Log Push Message
+        run: |
+          echo "🚀 Push detected on dev branch"
+          echo "Commit Message: ${{ github.event.head_commit.message }}"
+          echo "Pushed by: ${{ github.actor }}"
+          echo "Commit SHA: ${{ github.sha }}"
+
+      - name: Open or Update PR dev -> stg
+        id: create-pr
+        uses: repo-sync/pull-request@v2
+        with:
+          source_branch: dev
+          destination_branch: stg
+          pr_title: "Promote dev to stg"
+          pr_body: |
+            Promote changes from **dev** into **stg**.
+
+            This pull request was automatically created/updated by the GitHub workflow run - [${{ github.run_id }}](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          pr_label: "stg,promotion"
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update PR title and description
+        if: ${{ steps.create-pr.outputs.pr_created == 'false' && steps.create-pr.outputs.has_changed_files == 'true' && steps.create-pr.outputs.pr_number != '' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr edit ${{ steps.create-pr.outputs.pr_number }} \
+            --title "Promote dev to stg" \
+            --body "Promote changes from **dev** into **stg**.
+
+            This pull request was automatically created/updated by the GitHub workflow run - [${{ github.run_id }}](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})"
