@@ -106,7 +106,7 @@ jobs:
 
   bump-rc-version:
     name: Bump RC version on release branch
-    needs: [prepare]
+    needs: [ prepare ]
     uses: ./.github/workflows/bump-version.yaml
     secrets: inherit
     permissions:
